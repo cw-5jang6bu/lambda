@@ -41,11 +41,6 @@ def get_expiry_timestamp_for_today(timezone):
     expiry_timestamp = int(midnight.timestamp()) - 1  # 23:59:59 설정
 
     return expiry_timestamp
-    # 오늘 자정 00:00의 UNIX 타임스탬프 계산
-    # now = datetime.now()
-    # midnight = datetime.combine(now.date(), datetime.min.time()) + timedelta(days=1)  # 내일 자정
-    # expiry_timestamp = int(time.mktime(midnight.timetuple())) - 1  # 23:59:59로 설정
-    # return expiry_timestamp
 
 def get_redis_client():
     # RedisCluster 클라이언트로 연결
@@ -108,11 +103,11 @@ def process_sqs_message(message_body):
         return {"statusCode": 400, "body": "User has already received a coupon"}
 
     # 오프라인 쿠폰 발급
-    coupon_id = check_and_decrement_coupons(redis_client, "offline", member_id, timezone)
+    coupon_id = check_and_decrement_coupons(redis_client, "online", member_id, timezone)
     if coupon_id:
-        return {"statusCode": 200, "body": f"Offline coupon granted successfully. Coupon ID: {coupon_id}"}
+        return {"statusCode": 200, "body": f"online coupon granted successfully. Coupon ID: {coupon_id}"}
     else:
-        return {"statusCode": 400, "body": "No offline coupons remaining"}
+        return {"statusCode": 400, "body": "No online coupons remaining"}
 
 def lambda_handler(event, context):
     print("Lambda 실행 - SQS 메시지 처리 시작")
@@ -120,7 +115,7 @@ def lambda_handler(event, context):
     for record in event.get('Records', []):
         receipt_handle = record['receiptHandle']  # 메시지 삭제를 위한 핸들
         message_body = record['body']  # 메시지 본문
-        print(f"message_body: {message_body}")
+
         response = process_sqs_message(message_body)
         print(f"process_sqs_message response: {response}")
 
